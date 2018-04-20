@@ -39,6 +39,14 @@ import org.springframework.context.annotation.Configuration;
  *      监听ApplicationEvent 及其下面的子事件
  *
  *      1.写一个监听器来监听某个事件(ApplicationEvent及其子类)
+ *      @EventListene;
+ *       原理?使用EventListenerMethodProcessor
+ *          SmartInitializingSingleton
+ *           1.IOC容器创建对象 并刷新容器
+ *           2finishBeanFactoryInitialization(beanFactory); 初始化剩下的单实例bean
+ *             1.先创建所有的单实例bean
+ *             2.获取所有创建好的单实例bean 判断是否是 SmartInitializingSingleton这个类型 如果是则调用
+ *              smartSingleton.afterSingletonsInstantiated();
  *      2.把监听器加入到容器中
  *      3.只要容器中有相关事件的发布 我们就能监听到这个事件
  *              ContextRefreshedEvent:容器刷新完成(所有bean都完全创建)会发布这个事件.
@@ -79,6 +87,8 @@ import org.springframework.context.annotation.Configuration;
             1.容器创建对象:refresh();
             2.registerListeners();//注册监听器 从容器中拿到所有的监听器 把他们注册到applicationEventMulticaster中;
             3.String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
+
+
  *
  *
  *

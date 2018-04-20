@@ -27,6 +27,7 @@ public class ExtTest {
     @Test
     public void test1(){
         context.publishEvent(new ApplicationEvent("我发布了一个事件") {
+
         });
 
     }
