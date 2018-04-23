@@ -158,7 +158,17 @@
                 3.publishEvent(new ContextRefreshedEvent(this));发布容器刷新完成事件.
                 4.LiveBeansView.registerApplicationContext(this);
 
-
+===================总结===============================
+    1.spring容器在起订的时候会保存所有注册进来的Bean的定义信息
+        1.xml注册bean<bean>
+        2.注解注册Bean@Service @Component @bean
+    2.spring容器会在何时的时机创建这些Bean
+        1.利用这个bean的时候,利用getBean创建bean,创建好之后保存在容器中
+        2.同一创建剩下所有的bean的时候 finishBeanFactoryInitialization();
+    3.后置处理器:每一个bean创建完成都会使用各种后置处理器来进行处理 来增强bean的功能
+    4.事件驱动模型:
+            ApplicaitonListener:事件监听
+            ApplicationEventMulticaster事件派发
 
 
 
