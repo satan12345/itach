@@ -148,6 +148,16 @@
                                     5 将创建的Bean添加到单实例缓存中:singletonObjects
 
                                     IOC容器就是这些map,很多mao里面保存了单实例bean 环境信息...
+                    查询所有的Bean是否是SmartInitializingSingleton接口的 如果是 就执行afterSingletonsInstantiated()
+        12.finishRefresh();完成BeanFactory的初始化创建工作;IOC容器就完成创建;
+                1.initLifecycleProcessor();初始化和生命周期相关的后置处理器:LifecycleProcessor
+                        默认先从容器中找是否有lifecycleProcessor的组件,如果没有 new DefaultLifecycleProcessor
+                        加入到容器中,供后续调用
+                        1.写一个LifecycleProcessor的实现类 可以再beanFactory的onRefresh,onClose的时候进行调用
+                2.getLifecycleProcessor().onRefresh();拿到生命周期处理器(监听beanFactory),回调onRefresh方法
+                3.publishEvent(new ContextRefreshedEvent(this));发布容器刷新完成事件.
+                4.LiveBeansView.registerApplicationContext(this);
+
 
 
 
