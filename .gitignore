@@ -25,3 +25,6 @@ workspace.xml
 springannotation/.idea/workspace.xml
 *.class
 springannotation/.idea/workspace.xml
+*/.idea/*
+*/target/*
+*.iml
