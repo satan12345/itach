@@ -22,9 +22,13 @@
 hs_err_pid*
 
 workspace.xml
-springannotation/.idea/workspace.xml
+*/.idea/workspace.xml
 *.class
-springannotation/.idea/workspace.xml
+*/.idea/workspace.xml
 */.idea/*
 */target/*
 *.iml
+*.cmd
+*/mvnw
+*/.mvn/*
+
