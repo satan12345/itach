@@ -29,8 +29,7 @@ public class SpringBoot02ConfigApplicationTests {
 
 	@Test
 	public void contextLoads() {
-		int a=5/3;
-		System.out.println(a);
+
 		System.out.println(person);
 	}
 

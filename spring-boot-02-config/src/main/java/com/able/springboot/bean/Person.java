@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * 加载指定的配置文件
  */
-@PropertySource({"classpath:person.properties"})
+//@PropertySource({"classpath:person.properties"})
 @Component
 public class Person {
     //@Value("${person.last-name}")
