@@ -1,2 +1,16 @@
 server:
   port: 8081
+
+
+#person:
+#  age: 18
+#  boss: false
+#  birth: 2017/12/12
+#  map: {k1: v1,k2: 12 ,skill: huodun }
+#  list: [xiaoying,mingren,yuzhibozuozhu]
+#  dog:
+#       name: 小狗
+#       age: 2
+#  last-name: 卡卡西
+
+
