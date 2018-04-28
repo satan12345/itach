@@ -15,7 +15,7 @@ import java.io.InputStream;
 public class MybatiesTest {
 
     SqlSessionFactory sqlSessionFactory;
-    SqlSession sqlSession;
+    SqlSession sqlSession;//非线程安全 非单线程环境中不可以作为成员变量
 
     /**
      * 根据xml配置文件(全局配置文件)创建一个SqlSessionFactory对象
@@ -28,13 +28,13 @@ public class MybatiesTest {
         InputStream inputStream = Resources.getResourceAsStream(resource);
         sqlSessionFactory =
                 new SqlSessionFactoryBuilder().build(inputStream);
-        sqlSession = sqlSessionFactory.openSession();
+
 
     }
 
     @Test
     public void test1() {
-
+        sqlSession = sqlSessionFactory.openSession();
         Employee employee = sqlSession.selectOne("com.able.dao.EmployeeMapper.selectById", 1);
         System.out.println(employee);
 
@@ -42,7 +42,9 @@ public class MybatiesTest {
 
     @Test
     public void test2() {
+        //会为接口创建一个代理对象 代理对象去执行CRUD方法
         EmployeeMapper mapper = sqlSession.getMapper(EmployeeMapper.class);
+        System.out.println(mapper.getClass());
         Employee employee = mapper.selectById(1);
         System.out.println(employee);
     }
