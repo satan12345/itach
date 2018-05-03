@@ -3,6 +3,21 @@
         PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
+
+
+    <!--
+    mybatis可以使用properties来引入外部properties配置文件的内容:
+    resource:引入类路径下资源
+    url:引入网络路径或者磁盘路径下的资源
+    (没啥用,以后都是Spring管理外部配置文件)
+    <properties resource="" url=""/>
+    -->
+    <!--
+        settings包含很多重要的设置项
+        settings:用了设置每一个设置项
+            name:设置项名
+            value:设置项值
+    -->
     <settings>
         <setting name="mapUnderscoreToCamelCase" value="true" />
     </settings>
