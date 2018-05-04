@@ -21,10 +21,33 @@
     <settings>
         <setting name="mapUnderscoreToCamelCase" value="true" />
     </settings>
+    <!--
+    typeAlias：为某个java类型起别名
+        type:指定要起别名的类型全类名;默认别名就是类名小写
+        alias:指定新的别名
+     package:为某个包下的所有类批量起别名
+        name:指定包名(为当前包及其子包起下类起别名(类名小写))
+
+       批量起别名的情况下使用@Alias注解为某个类型指定新的别名
+    -->
 
     <typeAliases>
-        <typeAlias type="com.able.bean.Employee" alias="employee"/>
+        <!--<typeAlias type="com.able.bean.Employee" alias="employee"/>-->
+        <package name="com.able.bean"/>
     </typeAliases>
+    <!--
+		4、environments：环境们，mybatis可以配置多种环境 ,default指定使用某种环境。可以达到快速切换环境。
+			environment：配置一个具体的环境信息；必须有两个标签；id代表当前环境的唯一标识
+				transactionManager：事务管理器；
+					type：事务管理器的类型;JDBC(JdbcTransactionFactory)|MANAGED(ManagedTransactionFactory)
+						自定义事务管理器：实现TransactionFactory接口.type指定为全类名
+
+				dataSource：数据源;
+					type:数据源类型;UNPOOLED(UnpooledDataSourceFactory)
+								|POOLED(PooledDataSourceFactory)
+								|JNDI(JndiDataSourceFactory)
+					自定义数据源：实现DataSourceFactory接口，type是全类名
+	 -->
 
 
     <environments default="development">
@@ -38,7 +61,37 @@
             </dataSource>
         </environment>
     </environments>
+
+    <!-- 5、databaseIdProvider：支持多数据库厂商的；
+		 type="DB_VENDOR"：VendorDatabaseIdProvider
+		 	作用就是得到数据库厂商的标识(驱动getDatabaseProductName())，mybatis就能根据数据库厂商标识来执行不同的sql;
+		 	MySQL，Oracle，SQL Server,xxxx
+	  -->
+    <databaseIdProvider type="DB_VENDOR">
+        <!-- 为不同的数据库厂商起别名 -->
+        <property name="MySQL" value="mysql"/>
+        <property name="Oracle" value="oracle"/>
+        <property name="SQL Server" value="sqlserver"/>
+    </databaseIdProvider>
+    <!--
+        6 mapper 将sql映射注册到全局配置文件中
+            resource:引用类路径下的资源
+            url:引用网络路径或者磁盘下的sql映射文件
+
+            class:Using mapper interface classes (注册接口)
+                1.有sql映射文件 映射文件名与接口同名 且放在同一个目录下;
+                2.基于注解没有sql映射文件
+
+
+    s-->
     <mappers>
-        <mapper resource="mappers/employeeMapper.xml"/>
+        <!--<mapper  resource="mappers/employeeMapper.xml"/>-->
+       <mapper class="com.able.dao.EmployeeMapper"/>
+       <mapper class="com.able.dao.EmployeeMapperAnnotation"/>
+        <!--<mapper class="com.able.dao.EmployeeMapperAnnotation"/>-->
+        <!--批量注册
+             射文件名与接口同名 且放在同一个目录下;
+        -->
+        <!--<package name="com.able.dao"/>-->
     </mappers>
 </configuration>

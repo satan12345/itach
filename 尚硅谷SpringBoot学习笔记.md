@@ -1079,13 +1079,395 @@ logback-spring.xml：日志框架就不直接加载日志的配置项，由Sprin
 
 
 
+## 四，WEB开发
+
+> 使用Spring Boot 
+>
+> ​	1创建Spring Boot 应用 选用我们需要的模块
+>
+> ​	2 Spring Boot 已经将这些场景配置好了 只需要在配置文件中配置少量配置就可以运行起来
+>
+> ​	3 自己编写业务代码
+>
+> 
+
+自动配置原理?
+
+​	这个场景Spring Boot 帮我们配置了什么 能不能修改 能修改哪些配置  能不能扩展
+
+​	
+
+```java
+xxxAutoConfiguration:帮我们给容器中自动配置组件
+xxxProperties:配置类来封装配置文件中的内容
+```
 
 
 
 
 
+### 2 Spring Boot 对静态资源的映射规则
+
+​	WebMvcAutoConfiguration
+
+```java
+@ConfigurationProperties(prefix = "spring.resources", ignoreUnknownFields = false)
+public class ResourceProperties {
+  //可以设置和资源相关的参数  缓存时间等
+```
 
 
+
+```java
+@Override
+		public void addResourceHandlers(ResourceHandlerRegistry registry) {
+			if (!this.resourceProperties.isAddMappings()) {
+				logger.debug("Default resource handling disabled");
+				return;
+			}
+			Duration cachePeriod = this.resourceProperties.getCache().getPeriod();
+			CacheControl cacheControl = this.resourceProperties.getCache()
+					.getCachecontrol().toHttpCacheControl();
+			if (!registry.hasMappingForPattern("/webjars/**")) {
+				customizeResourceHandlerRegistration(registry
+						.addResourceHandler("/webjars/**")
+						.addResourceLocations("classpath:/META-INF/resources/webjars/")
+						.setCachePeriod(getSeconds(cachePeriod))
+						.setCacheControl(cacheControl));
+			}
+			String staticPathPattern = this.mvcProperties.getStaticPathPattern();
+			if (!registry.hasMappingForPattern(staticPathPattern)) {
+				customizeResourceHandlerRegistration(
+						registry.addResourceHandler(staticPathPattern)
+								.addResourceLocations(getResourceLocations(
+										this.resourceProperties.getStaticLocations()))
+								.setCachePeriod(getSeconds(cachePeriod))
+								.setCacheControl(cacheControl));
+			}
+		}
+```
+
+1.所有/webjars/** 都去classpath:/META-INF/resources/webjars/下找资源
+
+
+
+http://www.webjars.org/
+
+![jquery20180503155635](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\jquery20180503155635.png)
+
+localhost:8080/webjars/jquery/2.1.4/jquery.js
+
+```xml
+<!--jquery的webjars-->
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>jquery</artifactId>
+			<version>2.1.4</version>
+		</dependency>
+在访问的时候只需要写webjars下面资源名称即可
+```
+
+
+
+2) /** :访问当前项目的任何资源 (静态资源文件夹)
+
+```java
+"classpath:/META-INF/resources/",
+"classpath:/resources/",
+"classpath:/static/",
+"classpath:/public/"
+```
+
+![1](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\1.png)
+
+http://localhost:8080/asserts/img/1.jpg
+
+
+
+```java
+//欢迎页映射
+@Bean
+		public WelcomePageHandlerMapping welcomePageHandlerMapping(
+				ApplicationContext applicationContext) {
+			return new WelcomePageHandlerMapping(
+					new TemplateAvailabilityProviders(applicationContext),
+					applicationContext, getWelcomePage(),
+					this.mvcProperties.getStaticPathPattern());
+		}
+
+	private Optional<Resource> getWelcomePage() {
+			String[] locations = getResourceLocations(
+					this.resourceProperties.getStaticLocations());
+			return Arrays.stream(locations).map(this::getIndexHtml)
+					.filter(this::isReadable).findFirst();
+		}
+	private Resource getIndexHtml(String location) {
+			return this.resourceLoader.getResource(location + "index.html");
+		}
+
+
+```
+
+欢迎页：静态资源文件夹下的所有的index.html页面;被/**映射
+
+配置喜欢的图标
+
+​	所有的**/favicon.ico都是在静态资源文件夹下找
+
+```java
+@Configuration
+		@ConditionalOnProperty(value = "spring.mvc.favicon.enabled", matchIfMissing = true)
+		public static class FaviconConfiguration implements ResourceLoaderAware {
+
+			private final ResourceProperties resourceProperties;
+
+			private ResourceLoader resourceLoader;
+
+			public FaviconConfiguration(ResourceProperties resourceProperties) {
+				this.resourceProperties = resourceProperties;
+			}
+
+			@Override
+			public void setResourceLoader(ResourceLoader resourceLoader) {
+				this.resourceLoader = resourceLoader;
+			}
+
+			@Bean
+			public SimpleUrlHandlerMapping faviconHandlerMapping() {
+				SimpleUrlHandlerMapping mapping = new SimpleUrlHandlerMapping();
+				mapping.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
+				mapping.setUrlMap(Collections.singletonMap("**/favicon.ico",
+						faviconRequestHandler()));
+				return mapping;
+			}
+
+			@Bean
+			public ResourceHttpRequestHandler faviconRequestHandler() {
+				ResourceHttpRequestHandler requestHandler = new ResourceHttpRequestHandler();
+				requestHandler.setLocations(resolveFaviconLocations());
+				return requestHandler;
+			}
+
+			private List<Resource> resolveFaviconLocations() {
+				String[] staticLocations = getResourceLocations(
+						this.resourceProperties.getStaticLocations());
+				List<Resource> locations = new ArrayList<>(staticLocations.length + 1);
+				Arrays.stream(staticLocations).map(this.resourceLoader::getResource)
+						.forEach(locations::add);
+				locations.add(new ClassPathResource("/"));
+				return Collections.unmodifiableList(locations);
+			}
+
+		}
+```
+
+
+
+### 3 模板引擎
+
+jsp  velocity Freemarker Thymeleaf
+
+![0](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\0.png)
+
+
+
+Spring Boot 推荐thymeleaf ： 语法更简单 功能更强大
+
+### 1，引入thymeleaf
+
+```java
+	<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+```
+
+### 2，Thymeleaf使用&语法
+
+```java
+@ConfigurationProperties(prefix = "spring.thymeleaf")
+public class ThymeleafProperties {
+
+	private static final Charset DEFAULT_ENCODING = StandardCharsets.UTF_8;
+
+	public static final String DEFAULT_PREFIX = "classpath:/templates/";
+
+	public static final String DEFAULT_SUFFIX = ".html";
+  //只要我们把HTML页面放在classpath:/templates/下,thymeleaf就能自动渲染
+```
+
+
+
+使用 ：
+
+1导入thymeleaf的名称空间
+
+```html
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+```
+
+2 使用thymeleaf的语法
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>成功</h1>
+<div th:text="${name}">这里显示欢迎信息</div>
+</body>
+</html>
+```
+
+### 3，语法规则
+
+​	1.  th:text ；改变当前元素里面的文本内容
+
+​		th:任意html属性;替换原生属性
+
+![-1](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\-1.png)
+
+
+
+2 表达式
+
+```properties
+Simple expressions:(表达式语法)
+Variable Expressions: ${...} 获取变量值:OGNL表达式
+		1.获取对象的属性 调用方法
+		2.使用内置的基本对象
+            #ctx : the context object.
+            #vars: the context variables.
+            #locale : the context locale.
+            #request : (only in Web Contexts) the HttpServletRequest object.
+            #response : (only in Web Contexts) the HttpServletResponse object.
+            #session : (only in Web Contexts) the HttpSession object.
+            #servletContext : (only in Web Contexts) the ServletContext object.
+         3.内置一些工具对象
+         	#execInfo : information about the template being processed.
+            #messages : methods for obtaining externalized messages inside variables expressions, in the same way as they
+            would be obtained using #{…} syntax.
+            #uris : methods for escaping parts of URLs/URIs
+            #conversions : methods for executing the configured conversion service (if any).
+            #dates : methods for java.util.Date objects: formatting, component extraction, etc.
+            #calendars : analogous to #dates , but for java.util.Calendar objects.
+            #numbers : methods for formatting numeric objects.
+            #strings : methods for String objects: contains, startsWith, prepending/appending, etc.
+            #objects : methods for objects in general.
+            #bools : methods for boolean evaluation.
+            #arrays : methods for arrays.
+            #lists : methods for lists.
+            #sets : methods for sets.
+            #maps : methods for maps.
+            #aggregates : methods for creating aggregates on arrays or collections.
+            #ids : methods for dealing with id attributes that might be repeated (for example, as a result of an iteration).
+Selection Variable Expressions: *{...} 选择表达式 和${}在功能上是一样的
+	配合 th:object进行使用
+		<div th:object="${session.user}">
+            <p>Name: <span th:text="*{firstName}">Sebastian</span>.</p>
+            <p>Surname: <span th:text="*{lastName}">Pepper</span>.</p>
+            <p>Nationality: <span th:text="*{nationality}">Saturn</span>.</p>
+         </div>
+Message Expressions: #{...} 获取国际化内容
+Link URL Expressions: @{...} 定义超链接：
+#<a href="details.html" th:href="@{/order/{orderId}/details(orderId=${o.id})}">view</a>
+Fragment Expressions: ~{...} 片段引用表达式
+	#<div th:insert="~{commons :: main}">...</div>
+Literals
+Text literals: 'one text' , 'Another one!' ,…
+Number literals: 0 , 34 , 3.0 , 12.3 ,…
+Boolean literals: true , false
+Null literal: null
+Literal tokens: one , sometext , main ,…
+Text operations:
+String concatenation: +
+Literal substitutions: |The name is ${name}|
+Arithmetic operations:
+Binary operators: + , - , * , / , %
+Minus sign (unary operator): -
+Boolean operations:
+Binary operators: and , or
+Boolean negation (unary operator): ! , not
+Comparisons and equality:
+Comparators: > , < , >= , <= ( gt , lt , ge , le )
+Equality operators: == , != ( eq , ne )
+Conditional operators:
+If-then: (if) ? (then)
+If-then-else: (if) ? (then) : (else)
+Default: (value) ?: (defaultvalue)
+Special tokens:No-Operation: _
+```
+
+
+
+### 4 ，SpringMVC自动配置
+
+https://docs.spring.io/spring-boot/docs/2.0.1.RELEASE/reference/htmlsingle/#boot-features-developing-web-applications
+
+### 27.1.1 Spring MVC Auto-configuration
+
+​	Spring Boot自动配置好了SpringMVC 
+
+​	以下是Spring Boot对Springmvc的默认配置
+
+Spring Boot provides auto-configuration for Spring MVC that works well with most applications.
+
+The auto-configuration adds the following features on top of Spring’s defaults:
+
+- Inclusion of `ContentNegotiatingViewResolver` and `BeanNameViewResolver` beans.
+
+  ​	自动配置了视图解析器(视图解析器:根据方法的返回值得到视图对象View ,视图对象决定如何渲染(转发? 重定向?))
+
+  ​	ContentNegotiatingViewResolver:组合所有的视图解析器 
+
+  ​	如何定制:我们可以自己给容器中添加一个视图解析器 ；自动将其组合进来
+
+- Support for serving static resources, including support for WebJars (covered [later in this document](https://docs.spring.io/spring-boot/docs/2.0.1.RELEASE/reference/htmlsingle/#boot-features-spring-mvc-static-content))).
+
+  ​	静态资源
+
+- Automatic registration of `Converter`, `GenericConverter`, and `Formatter` beans.
+
+  ​	自动注册转换器 格式化器 
+
+  我们自己添加的格式化器 转换器 我们只要放到容器中即可
+
+- Support for `HttpMessageConverters` (covered [later in this document](https://docs.spring.io/spring-boot/docs/2.0.1.RELEASE/reference/htmlsingle/#boot-features-spring-mvc-message-converters)).
+
+  ​	SpringMVC中用来转换Http请求与响应的
+
+  ​	
+
+- Automatic registration of `MessageCodesResolver` (covered [later in this document](https://docs.spring.io/spring-boot/docs/2.0.1.RELEASE/reference/htmlsingle/#boot-features-spring-message-codes)).
+
+  ​	定义错误代码生成规则
+
+- Static `index.html` support. 静态首页 
+
+- Custom `Favicon` support (covered [later in this document](https://docs.spring.io/spring-boot/docs/2.0.1.RELEASE/reference/htmlsingle/#boot-features-spring-mvc-favicon)). favicon.ico
+
+- Automatic use of a `ConfigurableWebBindingInitializer` bean (covered [later in this document](https://docs.spring.io/spring-boot/docs/2.0.1.RELEASE/reference/htmlsingle/#boot-features-spring-mvc-web-binding-initializer)).
+
+  ​
+
+  ​
+
+  org.springframework.boot.autoconfigure.web	:WEB 的所有的自动场景;
+
+If you want to keep Spring Boot MVC features and you want to add additional [MVC configuration](https://docs.spring.io/spring/docs/5.0.5.RELEASE/spring-framework-reference/web.html#mvc) (interceptors, formatters, view controllers, and other features), you can add your own `@Configuration` class of type `WebMvcConfigurer` but **without** `@EnableWebMvc`. If you wish to provide custom instances of `RequestMappingHandlerMapping`, `RequestMappingHandlerAdapter`, or `ExceptionHandlerExceptionResolver`, you can declare a `WebMvcRegistrationsAdapter` instance to provide such components.
+
+If you want to take complete control of Spring MVC, you can add your own `@Configuration` annotated with `@EnableWebMvc`.
+
+
+
+### 5，如何修改SpringBoot的默认配置
+
+模式：
+
+​	1SpringBoot在自动配置很多组件的时候 先看容器中有没有用户自己的配置的组件（@Bean @Component）如果有 就用用户自己配置的;如果没有 才自动配置;如果有些组件由多个(ViewResolver) ;将用户配置和默认的组合起来;
 
 
 

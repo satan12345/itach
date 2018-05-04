@@ -2,6 +2,7 @@ package com.able;
 
 import com.able.bean.Employee;
 import com.able.dao.EmployeeMapper;
+import com.able.dao.EmployeeMapperAnnotation;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -28,13 +29,14 @@ public class MybatiesTest {
         InputStream inputStream = Resources.getResourceAsStream(resource);
         sqlSessionFactory =
                 new SqlSessionFactoryBuilder().build(inputStream);
+        sqlSession = sqlSessionFactory.openSession();
+
 
 
     }
 
     @Test
     public void test1() {
-        sqlSession = sqlSessionFactory.openSession();
         Employee employee = sqlSession.selectOne("com.able.dao.EmployeeMapper.selectById", 1);
         System.out.println(employee);
 
@@ -42,10 +44,24 @@ public class MybatiesTest {
 
     @Test
     public void test2() {
+
         //会为接口创建一个代理对象 代理对象去执行CRUD方法
         EmployeeMapper mapper = sqlSession.getMapper(EmployeeMapper.class);
         System.out.println(mapper.getClass());
         Employee employee = mapper.selectById(1);
+        System.out.println(employee);
+    }
+    @Test
+    public void test3() {
+        //会为接口创建一个代理对象 代理对象去执行CRUD方法
+        EmployeeMapperAnnotation mapper = sqlSession.getMapper(EmployeeMapperAnnotation.class);
+        Employee employee = mapper.selectById(1);
+        System.out.println(employee);
+    }
+    @Test
+    public void test4(){
+        EmployeeMapper mapper = sqlSession.getMapper(EmployeeMapper.class);
+        Employee employee = mapper.selectByIdAndName(1, "卡卡西");
         System.out.println(employee);
     }
 
