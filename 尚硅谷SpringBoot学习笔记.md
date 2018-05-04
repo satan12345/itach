@@ -1469,17 +1469,113 @@ If you want to take complete control of Spring MVC, you can add your own `@Confi
 
 ​	1SpringBoot在自动配置很多组件的时候 先看容器中有没有用户自己的配置的组件（@Bean @Component）如果有 就用用户自己配置的;如果没有 才自动配置;如果有些组件由多个(ViewResolver) ;将用户配置和默认的组合起来;
 
+​	在SpringBoot中会有非常多的xxxConfiguration帮助我们进行扩展配置
+
+扩展SpringMVC 
+
+**编写一个配置类(@Configuration) 是WebMvcConfigurationAdapter类型 不能标注@EnableWebMvc** 
+
+既保留了所有的自动配置 也能用我们扩展的配置
+
+```java
+/*
+扩展SpringMVC的功能
+ */
+@Configuration
+public class MVCConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/able").setViewName("success");
+
+    }
+}
+```
+
+原理:
+
+​	1 WebMvcAutoConfiguration是SpringMVC自动配置类
+
+​	2 在做其他自动配置时 会导入@Import(EnableWebMvcConfigutation.class)
+
+​	3 容器中所有的WebMvcConfiguration都会一起起作用 
+
+​	4 我们的配置类也会起作用
 
 
 
 
 
+```java
+	@Configuration
+	@Import(EnableWebMvcConfiguration.class)
+	@EnableConfigurationProperties({ WebMvcProperties.class, ResourceProperties.class })
+	@Order(0)
+	public static class WebMvcAutoConfigurationAdapter
+			implements WebMvcConfigurer, ResourceLoaderAware {
+/**
+	 * Configuration equivalent to {@code @EnableWebMvc}.
+	 */
+	@Configuration
+	public static class EnableWebMvcConfiguration extends DelegatingWebMvcConfiguration {
+      
+    }
+      @Configuration
+public class DelegatingWebMvcConfiguration extends WebMvcConfigurationSupport {
+
+	private final WebMvcConfigurerComposite configurers = new WebMvcConfigurerComposite();
+
+	//从容器中获取所有的WebMvcConfigurer
+	@Autowired(required = false)
+	public void setConfigurers(List<WebMvcConfigurer> configurers) {
+		if (!CollectionUtils.isEmpty(configurers)) {
+			this.configurers.addWebMvcConfigurers(configurers);
+		}
+	}
+      
+```
 
 
 
+### 3 全面接管SpringMVC
+
+​	springBoot 对SpringMVC自动配置不需要了 所有都是我们自己配  只需要我们在配置类中添加@EnableWebMVC
+
+原理:
+
+​	为什么@EnableWebMVC自动配置就失效了
+
+​	1 @EnableWebMvc的核心
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Documented
+@Import(DelegatingWebMvcConfiguration.class)
+public @interface EnableWebMvc {
+}
+```
+
+```java
+@Configuration
+public class DelegatingWebMvcConfiguration extends WebMvcConfigurationSupport {
+```
+
+```java
+@Configuration
+@ConditionalOnWebApplication(type = Type.SERVLET)
+@ConditionalOnClass({ Servlet.class, DispatcherServlet.class, WebMvcConfigurer.class })
+//容器中没有这个组件的时候 自动配置类才生效
+@ConditionalOnMissingBean(WebMvcConfigurationSupport.class)
+@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE + 10)
+@AutoConfigureAfter({ DispatcherServletAutoConfiguration.class,
+		ValidationAutoConfiguration.class })
+public class WebMvcAutoConfiguration {
+```
 
 
 
+@EnableWebMvc将WebMvcConfigurationSupport组件导入进来；导入的只是springmvc最基本的功能
 
 
 

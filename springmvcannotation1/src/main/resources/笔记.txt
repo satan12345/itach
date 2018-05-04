@@ -1,0 +1,57 @@
+1. web容器在启动的时候会扫描 每个jar包下的META-INF/services/javax.ServletContainerInitializer
+2. 加载这个文件指定的类org.springframework.web.SpringServletContainerInitializer
+3. spring应用一启动就会加载WebApplicationInitializer 这个接口下的所有组件;
+4. 并且为WebApplicationInitializer组件创建对象(组件不是接口 不是抽象类)
+        AbstractContextLoaderInitializer:创建根容器
+               protected void registerContextLoaderListener(ServletContext servletContext) {
+               		WebApplicationContext rootAppContext = createRootApplicationContext();
+               		if (rootAppContext != null) {
+               			ContextLoaderListener listener = new ContextLoaderListener(rootAppContext);
+               			listener.setContextInitializers(getRootApplicationContextInitializers());
+               			servletContext.addListener(listener);
+               		}
+               		else {
+               			logger.debug("No ContextLoaderListener registered, as " +
+               					"createRootApplicationContext() did not return an application context");
+               		}
+               	}
+               AbstractDispatcherServletInitializer:
+                    protected void registerDispatcherServlet(ServletContext servletContext) {
+                    		String servletName = getServletName();
+                    		Assert.hasLength(servletName, "getServletName() must not return empty or null");
+                            //创建WEB 容器
+                    		WebApplicationContext servletAppContext = createServletApplicationContext();
+                    		Assert.notNull(servletAppContext,
+                    				"createServletApplicationContext() did not return an application " +
+                    				"context for servlet [" + servletName + "]");
+                            //创建DispatcherServlet
+                    		FrameworkServlet dispatcherServlet = createDispatcherServlet(servletAppContext);
+                    		//将创建的DispatcherServlet添加到ServletContext中
+                    		dispatcherServlet.setContextInitializers(getServletApplicationContextInitializers());
+
+                    		ServletRegistration.Dynamic registration = servletContext.addServlet(servletName, dispatcherServlet);
+                    		Assert.notNull(registration,
+                    				"Failed to register servlet with name '" + servletName + "'." +
+                    				"Check if there is another servlet registered under the same name.");
+
+                    		registration.setLoadOnStartup(1);
+                    		registration.addMapping(getServletMappings());
+                    		registration.setAsyncSupported(isAsyncSupported());
+
+                    		Filter[] filters = getServletFilters();
+                    		if (!ObjectUtils.isEmpty(filters)) {
+                    			for (Filter filter : filters) {
+                    				registerServletFilter(servletContext, filter);
+                    			}
+                    		}
+
+                    		customizeRegistration(registration);
+                    	}
+
+               AbstractAnnotationConfigDispatcherServletInitializer:
+                        重写了父类的创建根容器的方法：createRootApplicationContext()
+                         创建web容器：createServletApplicationContext
+
+总结:
+    以注解的方式来启动SpringMVC 继承AbstractAnnotationConfigDispatcherServletInitializer;
+        实现抽象方法指定DispatcherServlet的配置信息;
