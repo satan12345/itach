@@ -119,9 +119,132 @@ LongAdder :热点数据分离
 
 
 
+## 5.1 发布对象
+
+### 发布对象
+
+​	使一个对象能够被当前范围之外的代码所使用
+
+### 对象逸出
+
+​	一种错误的发布。当一个对象还没有构造完成时 就是他被其他线程所见
 
 
 
+### 安全发布对象
+
+​	在静态初始化函数中初始化一个对象引用
+
+​	将对象的引用保存到volatile类型域或者AtomicReference对象中
+
+​	将对象的引用保存到某个正确构造对象的final类型域中
+
+​	将对象的引用保存到一个由锁保护的域中
+
+```java
+public class SingletonExample6 {
+    private SingletonExample6() {
+    }
+
+    static {
+        instance = new SingletonExample6();
+    }
+
+    private static SingletonExample6 instance = null;
+
+    public static SingletonExample6 getInstance() {
+        return instance;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(instance);
+        System.out.println(instance);
+    }
+}
+//这样打印的值为null
+因为先执行静态代码块 后 执执行静态域的初始化
+
+public class SingletonExample6 {
+    private SingletonExample6() {
+    }
+
+ private static SingletonExample6 instance = null;
+ 
+    static {
+        instance = new SingletonExample6();
+    }
+
+   
+
+    public static SingletonExample6 getInstance() {
+        return instance;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(instance);
+        System.out.println(instance);
+    }
+}
+
+```
+
+
+
+
+
+## 6.1 不可变对象
+
+	### 不可变对象需要满足的条件
+
+​		对象创建以后其状态就是不能修改
+
+​		对象所有域都是final类型
+
+​		对象是正确创建的(在对象创建期间,this引用没有逸出)
+
+**final关键字:类 方法 变量**
+
+​	修饰类：不能被继承(其所有方法都隐式的指定为final方法)
+
+​	修饰方法：1 锁定方法不被继承类修改 2 效率(一个类的private 方法被隐式的指定为final方法)
+
+​	修饰变量：基本数据类型变量 引用类型变量
+
+
+
+### 不可变对象
+
+Collections.unmodifiablexxx   Collection，list  Set  Map 
+
+
+
+Guava:ImmutableXXX: Collection ，List ， Set，Map
+
+## 
+
+
+
+### 线程封闭
+
+​	Ad-hoc线程封闭：程序控制实现 最糟糕 忽略
+
+​	堆栈封闭：局部变量 无并发问题
+
+​	ThreadLocal线程封闭：特别好的封闭方法
+
+
+
+### 线程不安全的类与写法
+
+​	StringBuilder -->StringBuffer
+
+​	SimpleDateFormate->jodaTime
+
+
+
+
+
+​	
 
 
 
