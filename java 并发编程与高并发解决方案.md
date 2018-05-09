@@ -240,11 +240,43 @@ Guava:ImmutableXXX: Collection ，List ， Set，Map
 
 ​	SimpleDateFormate->jodaTime
 
+​	ArrayList，HashSet，HashMap等Collection 
 
 
 
 
-​	
+
+### 线程安全--同步容器
+
+ArrayList->Vector,Stack
+
+HashMap->HashTable(key,value不能为null)
+
+Collections.synchronizedXXX(List,Set,Map)
+
+java.util.ConcurrentModificationException 
+
+
+
+### 线程安全-并发容器JUC
+
+ArrayList->CopyOnWriteArrayList
+
+HashSet,TreeSet->CopyOnWriteArraySet ConcurrentSkipListSet
+
+HashMap,TreeMap->ConcurrentHashMap ConcurrentSkipListMap(排序)
+
+![-2](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\-2.png)
+
+### 安全共享对象的策略
+
+​	线程限制:一个呗线程限制的对象 由线程独占 并且只能被占有她的线程修改
+
+​	共享只读：一个共享只读的对象，在没有额外同步的情况下 可以被多个线程并发访问 但是任何线程都不能修改他
+
+​	线程安全对象:一个线程安全的对象或者容器 在内部通过同步机制来保证线程安全 所以其他线程无需额外的同步就可以通过公共接口随意访问他
+
+​	被守护对象：被守护对象只能通过获取特定的锁来访问
 
 
 

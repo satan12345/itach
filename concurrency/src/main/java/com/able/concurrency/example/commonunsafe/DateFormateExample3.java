@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -31,10 +32,11 @@ public class DateFormateExample3 {
         CountDownLatch countDownLatch = new CountDownLatch(clientTotal);
         for (int i = 0; i < clientTotal; i++) {
 
+            final int count=i;
             executorService.execute(() -> {
                 try {
                     semaphore.acquire();
-                    update();
+                    update(count);
 
                 } catch (InterruptedException e) {
                     log.error(e.toString());
@@ -52,9 +54,11 @@ public class DateFormateExample3 {
     }
 
 
-    public static void update() {
+    public static void update(int count) {
 
-            dateTimeFormatter.parse("2018-02-08");
+
+        log.info("{},{}",count,LocalDateTime.now().format(dateTimeFormatter));
+
 
     }
 }
