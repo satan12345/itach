@@ -282,6 +282,54 @@ HashMap,TreeMap->ConcurrentHashMap ConcurrentSkipListMap(排序)
 
 
 
+### CountDownLatch
+
+### Semaphore
+
+### CyclicBarrier
+
+> cyclicbarrier 计数器可以使用多次
+>
+> ​		多个线程之间相互等待
+>
+> CountDownLatch计时器只能使用一次
+>
+> ​	一个或多个线程等待其他线程
+>
+> 
+
+### ReentrantLock 与锁
+
+ReentrantLock(可重入锁)和synchronized的区别
+
+​	可重入性
+
+​	锁的实现
+
+​	性能的区别
+
+​	功能区别
+
+​	
+
+reentrantLock独有的功能
+
+​	可以指定是公平锁还是非公平锁
+
+​	提供了一个Condition类 可以分组唤醒需要唤醒的线程
+
+​	提供能够中的等待锁的线程的机制 lock.lockInterruptibly();
+
+ReentrantReadWriteLock
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1579,6 +1579,450 @@ public class WebMvcAutoConfiguration {
 
 
 
+## 6 Restful CRUD
+
+### 1 访问默认首页
+
+```java
+/*
+扩展SpringMVC的功能
+ */
+@Configuration
+public class MVCConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/able").setViewName("success");
+
+    }
+
+    /**所有的WebMvcAdapter都会一起起作用
+     *
+     * @return
+     */
+    @Bean
+    WebMvcConfigurer webMvcConfigurer(){
+        return new WebMvcConfigurer() {
+            @Override
+            public void addViewControllers(ViewControllerRegistry registry) {
+                registry.addViewController("/").setViewName("login");
+            }
+        };
+    }
+}
+```
+
+### 2 国际化
+
+​	1 编写国际化配置文件
+
+​	2 使用ResourceBundleMessageSource管理国际化资源文件
+
+​	3 在页面使用fmtLmessage取出国际化内容
+
+步骤
+
+​	1.编写国际化配置文件抽取页面需要显示的国际化消息
+
+```properties
+login.btn=Sign In
+login.password=Password
+login.remeber=Remeber Me
+login.tip=Please sign in
+login.username=UserName
+```
+
+​	2 Spring Boot 自动配置好了管理国际化资源文件的组件
+
+```java
+@Configuration
+@ConditionalOnMissingBean(value = MessageSource.class, search = SearchStrategy.CURRENT)
+@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
+@Conditional(ResourceBundleCondition.class)
+@EnableConfigurationProperties
+public class MessageSourceAutoConfiguration {
+  	@Bean
+	@ConfigurationProperties(prefix = "spring.messages")
+	public MessageSourceProperties messageSourceProperties() {
+		return new MessageSourceProperties();
+	}
+}
+
+
+public class MessageSourceProperties {
+
+	/**
+	 * Comma-separated list of basenames (essentially a fully-qualified classpath
+	 * location), each following the ResourceBundle convention with relaxed support for
+	 * slash based locations. If it doesn't contain a package qualifier (such as
+	 * "org.mypackage"), it will be resolved from the classpath root.
+	 */
+  //我们的配置文件可以直接放在类路径下叫Messages.properties 
+	private String basename = "messages";
+  
+```
+
+原理：
+
+​	国际化Local(区域信息对象);LocalResolver(获取区域信息对象)
+
+```java
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = "spring.mvc", name = "locale")
+		public LocaleResolver localeResolver() {
+			if (this.mvcProperties
+					.getLocaleResolver() == WebMvcProperties.LocaleResolver.FIXED) {
+				return new FixedLocaleResolver(this.mvcProperties.getLocale());
+			}
+			AcceptHeaderLocaleResolver localeResolver = new AcceptHeaderLocaleResolver();
+			localeResolver.setDefaultLocale(this.mvcProperties.getLocale());
+			return localeResolver;
+		}
+//默认就是根据请求头带来的区域信息获取local进行国际化
+AcceptHeaderLocaleResolver
+	@Override
+	public Locale resolveLocale(HttpServletRequest request) {
+		Locale defaultLocale = getDefaultLocale();
+		if (defaultLocale != null && request.getHeader("Accept-Language") == null) {
+			return defaultLocale;
+		}
+		Locale requestLocale = request.getLocale();
+		List<Locale> supportedLocales = getSupportedLocales();
+		if (supportedLocales.isEmpty() || supportedLocales.contains(requestLocale)) {
+			return requestLocale;
+		}
+		Locale supportedLocale = findSupportedLocale(request, supportedLocales);
+		if (supportedLocale != null) {
+			return supportedLocale;
+		}
+		return (defaultLocale != null ? defaultLocale : requestLocale);
+	}
+```
+
+
+
+### 3登录
+
+​	开发期间模板引擎页面修改以后 要实时生效
+
+​	 1 禁用模板引擎的缓存
+
+```prope
+spring.thymeleaf.cache=false
+```
+
+
+
+​	2 页面修改完成以后**ctrl+f9** 重新编译
+
+
+
+​	登录错误消息的显示:
+
+```html
+<p style="color:red" th:text="${msg}" th:if="${not #strings.isEmpty(msg)}"></p>
+```
+
+​	3 拦截器进行登录检查
+
+### CRUD 员工列表
+
+​	实验要求：RestfulCRUD: CRUD满足Rest风格
+
+URI:/资源名称/资源标识    HTTP请求方式区分对资源的CRUD操作
+
+|      | 普通的CRUD操作（URI）来区分操作      | RestFulCRUD      |
+| ---- | ------------------------ | ---------------- |
+| 查询   | getEmp                   | emp--get         |
+| 添加   | addEmp?xxx               | emp--post        |
+| 修改   | updateEmp?id=xxx&xxx=xxx | emp/{id}--put    |
+| 删除   | deleteEmp?id=1           | emp/{id}--delete |
+
+实验的请求架构
+
+|              | 请求URI    | 请求方式   |
+| ------------ | -------- | ------ |
+| 查询所有员工       | emps     | get    |
+| 查询某个员工       | emp/{id} | get    |
+| 来到添加页面       | emp      | get    |
+| 添加员工         | emp      | post   |
+| 来到修改页面(查出员工) | emp/{id} | get    |
+| 修改员工         | emp      | put    |
+| 删除员工         | emp/{id} | delete |
+
+员工列表：
+
+	### tyymeleaf公共页面元素抽取
+
+```html
+抽取公共片段
+<div th:fragment="copy">
+&copy; 2011 The Good Thymes Virtual Grocery
+</div>
+引入公共片段:
+<div th:insert="~{footer :: copy}"></div>
+~{templatename::selector}:模板名::选择器名
+~{templatename::fragmentname}模板名::片段名
+默认效果：
+insert的功能片段在div标签中
+如果使用th:insert 等属性进行引入 ，可以不用写~{};
+行内写法：[[~{}]]  [(~{})]必须加上
+
+```
+
+三种引入公共片段的th属性
+
+​	th:insert    ：将公共片段整个插入到指定元素中
+
+​	th:replace   :将公共片段替换到指定的元素中
+
+​	th:include ：将被引入的片段的内容包含进标签中
+
+```html
+<footer th:fragment="copy">
+&copy; 2011 The Good Thymes Virtual Grocery
+</footer>
+引入方式
+<div th:insert="footer :: copy"></div>
+<div th:replace="footer :: copy"></div>
+<div th:include="footer :: copy"></div>
+效果:
+<div>
+<footer>
+&copy; 2011 The Good Thymes Virtual Grocery
+</footer>
+</div>
+<footer>
+&copy; 2011 The Good Thymes Virtual Grocery
+</footer>
+<div>
+&copy; 2011 The Good Thymes Virtual Grocery
+</
+```
+
+在引入片段的时候传入参数:
+
+提交的数据格式不对：生日日期
+
+2017-12-12;2017/12/12;2017.12.12
+
+日期的格式化:SpringMVC将页面提交的值需要转换为指定的类型
+
+2017-12-12--Date:类型转换  格式化
+
+默认日期是按照/的方式
+
+
+
+## 7 错误处理机制
+
+	### 1 spring boot 默认的错误处理机制
+
+​	返回一个默认的错误页面
+
+
+
+![2](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\2.png)
+
+![4](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\4.png)
+
+浏览器发送请求的请求头
+
+如果是其他客户端访问 默认相应一个 json数据
+
+![3](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\3.png)
+
+![5](F:\BaiduNetdiskDownload\springboot尚硅谷\图片\5.png)
+
+
+
+原理:
+
+​	可以参照ErrorMvcAutoConfiguration：错误处理的自动配置
+
+​	给容器中添加了以下组件:
+
+​		DefaultErrorAttributes
+
+```java
+@Override
+	public Map<String, Object> getErrorAttributes(WebRequest webRequest,
+			boolean includeStackTrace) {
+		Map<String, Object> errorAttributes = new LinkedHashMap<>();
+		errorAttributes.put("timestamp", new Date());
+		addStatus(errorAttributes, webRequest);
+		addErrorDetails(errorAttributes, webRequest, includeStackTrace);
+		addPath(errorAttributes, webRequest);
+		return errorAttributes;
+	}
+```
+
+
+
+​		BasicErrorController 处理默认/error请求
+
+```java
+@Controller
+@RequestMapping("${server.error.path:${error.path:/error}}")
+public class BasicErrorController extends AbstractErrorController {
+  //产生Html类型的数据  浏览器发送的请求来到这个方法处理
+  @RequestMapping(produces = "text/html")
+	public ModelAndView errorHtml(HttpServletRequest request,
+			HttpServletResponse response) {
+		HttpStatus status = getStatus(request);
+		Map<String, Object> model = Collections.unmodifiableMap(getErrorAttributes(
+				request, isIncludeStackTrace(request, MediaType.TEXT_HTML)));
+		response.setStatus(status.value());
+      //去哪个页面作为错误页面;包含页面地址和页面内容
+		ModelAndView modelAndView = resolveErrorView(request, response, status, model);
+		return (modelAndView == null ? new ModelAndView("error", model) : modelAndView);
+	}
+
+  //产生json数据  其他客户端来到这个方法处理
+	@RequestMapping
+	@ResponseBody
+	public ResponseEntity<Map<String, Object>> error(HttpServletRequest request) {
+		Map<String, Object> body = getErrorAttributes(request,
+				isIncludeStackTrace(request, MediaType.ALL));
+		HttpStatus status = getStatus(request);
+		return new ResponseEntity<>(body, status);
+	}
+```
+
+
+
+​		
+
+​		ErrorPageCustomizer
+
+```java
+@Value("${error.path:/error}")
+	private String path = "/error";
+系统出现错误以后 来到error请求进行处理请求(web.xml注册的错误页面规则)
+```
+
+
+
+
+
+​		DefaultErrorViewResolverConfiguration
+
+
+
+​		DefaultErrorViewResolver
+
+```java
+@Override
+	public ModelAndView resolveErrorView(HttpServletRequest request, HttpStatus status,
+			Map<String, Object> model) {
+		ModelAndView modelAndView = resolve(String.valueOf(status), model);
+		if (modelAndView == null && SERIES_VIEWS.containsKey(status.series())) {
+			modelAndView = resolve(SERIES_VIEWS.get(status.series()), model);
+		}
+		return modelAndView;
+	}
+
+	private ModelAndView resolve(String viewName, Map<String, Object> model) {
+      //默认springBoot可以去找到一个页面? error/404
+		String errorViewName = "error/" + viewName;
+      //模板引擎可以解析这个地址 就用模板引擎解析
+		TemplateAvailabilityProvider provider = this.templateAvailabilityProviders
+				.getProvider(errorViewName, this.applicationContext);
+		if (provider != null) {
+          	//模板引擎可用 的情况下就返回到errorViewName指定的视图地址
+			return new ModelAndView(errorViewName, model);
+		}
+      //模板引擎不可用 ,在静态资源文件夹下找errorViewName对应的页面 error/404.html 静态资源文件夹下有就返回页面 没有就饭后null
+		return resolveResource(errorViewName, model);
+	}
+private ModelAndView resolveResource(String viewName, Map<String, Object> model) {
+		for (String location : this.resourceProperties.getStaticLocations()) {
+			try {
+				Resource resource = this.applicationContext.getResource(location);
+				resource = resource.createRelative(viewName + ".html");
+				if (resource.exists()) {
+					return new ModelAndView(new HtmlResourceView(resource), model);
+				}
+			}
+			catch (Exception ex) {
+			}
+		}
+		return null;
+	}
+```
+
+
+
+步骤：
+
+​	一旦系统出现4xx 或者5xx之类的错误:ErrorPageCustomizer就会生效(定制的错误的响应规则);就会来到/error请求;就会被BaseErrorController处理；
+
+​		1响应页面;去哪个页面是由DefaultErrorViewResolver解析的
+
+```java
+protected ModelAndView resolveErrorView(HttpServletRequest request,
+			HttpServletResponse response, HttpStatus status, Map<String, Object> model) {
+  //所有的ErrorViewResolver得到ModelAndView 
+		for (ErrorViewResolver resolver : this.errorViewResolvers) {
+			ModelAndView modelAndView = resolver.resolveErrorView(request, status, model);
+			if (modelAndView != null) {
+				return modelAndView;
+			}
+		}
+		return null;
+	}
+```
+
+
+
+​		
+
+​	如何定制错误响应：
+
+​		如何定制错误页面
+
+​			1有模板引擎的情况下,error/状态码，[将错误页面命名为错误状态码.html 放在模板引擎文件里的error文件夹下]
+
+​			2我们可以使用4xx 与5xx作为错误页面的文件名来匹配这种类型的所有错误;精确优先（优先寻找精确状态码.html）
+
+​			页面能获取的信息
+
+```java
+errorAttributes.put("timestamp", new Date());//时间戳
+addStatus(errorAttributes, webRequest);//状态码
+addErrorDetails(errorAttributes, webRequest, includeStackTrace);//Error错误提示
+addPath(errorAttributes, webRequest);
+```
+
+​	没有模板引擎(模板引擎找不到这个错误页面) 在静态资源文件夹下寻找
+
+​	以上都没有错误页面 就默认来到Spring Boot默认的错误提示页面
+
+​		如何定制错误的json数据
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
