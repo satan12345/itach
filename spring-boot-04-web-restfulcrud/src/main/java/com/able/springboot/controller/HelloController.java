@@ -1,5 +1,6 @@
 package com.able.springboot.controller;
 
+import com.able.springboot.exception.UserNotFondException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -13,8 +14,11 @@ public class HelloController {
 
     @ResponseBody
     @RequestMapping("hello")
-    public String hello(){
-        return "hello 卡卡西";
+    public String hello(String name){
+        if ("aaa".equals(name)) {
+            throw new UserNotFondException();
+        }
+        return "hello world";
     }
 
     @RequestMapping("success")

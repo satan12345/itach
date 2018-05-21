@@ -324,7 +324,9 @@ ReentrantReadWriteLock
 
 
 
+当只有少量竞争者的时候 sync是一个不错的选择
 
+当竞争者不少 ReentrantLock
 
 
 
